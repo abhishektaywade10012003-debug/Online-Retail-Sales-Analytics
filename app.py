@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
+
 
 # --------------------------------
 # 1. PAGE CONFIGURATION
@@ -99,25 +99,15 @@ st.divider()
 
 st.subheader("Monthly Revenue Analysis")
 
-filtered["Month"] = (
-    filtered["InvoiceDate"].dt.to_period("M").astype(str)
-)
-
 monthly = (
     filtered.groupby("Month")["Sales"]
     .sum()
     .reset_index()
 )
 
-fig1 = px.line(
-    monthly,
-    x="Month",
-    y="Sales",
-    markers=True,
-    title="Monthly Revenue Trend"
-)
+monthly = monthly.set_index("Month")
 
-st.plotly_chart(fig1, use_container_width=True)
+st.line_chart(monthly)
 
 # --------------------------------
 # 7. TOP SELLING PRODUCTS
@@ -133,19 +123,9 @@ top_products = (
     .reset_index()
 )
 
-fig2 = px.bar(
-    top_products,
-    x="Sales",
-    y="Description",
-    orientation="h",
-    title="Top 10 Products"
-)
+top_products = top_products.set_index("Description")
 
-fig2.update_layout(
-    yaxis={"categoryorder": "total ascending"}
-)
-
-st.plotly_chart(fig2, use_container_width=True)
+st.bar_chart(top_products)
 
 # --------------------------------
 # 8. COUNTRY-WISE SALES
@@ -161,20 +141,14 @@ country_sales = (
     .reset_index()
 )
 
-fig3 = px.bar(
-    country_sales,
-    x="Country",
-    y="Sales",
-    title="Top 10 Countries by Revenue"
-)
+country_sales = country_sales.set_index("Country")
 
-st.plotly_chart(fig3, use_container_width=True)
+st.bar_chart(country_sales)
 
 # --------------------------------
 # 9. CUSTOMER SEGMENTATION
 # --------------------------------
 
-st.divider()
 st.subheader("Customer Segmentation - RFM Analysis")
 
 if "Segment" in rfm.columns:
@@ -185,17 +159,13 @@ if "Segment" in rfm.columns:
         .reset_index()
     )
 
-    segment_count.columns = ["Segment", "Customers"]
+    segment_count.columns = [
+        "Segment", "Customers"
+    ]
 
-    fig4 = px.pie(
-        segment_count,
-        names="Segment",
-        values="Customers",
-        title="Customer Segments",
-        hole=0.4
+    st.bar_chart(
+        segment_count.set_index("Segment")
     )
-
-    st.plotly_chart(fig4, use_container_width=True)
 
     st.write("Customer Segmentation Summary")
 
@@ -205,19 +175,7 @@ if "Segment" in rfm.columns:
     )
 
 else:
-    st.warning("Segment column not found in RFM dataset.")
-
-# --------------------------------
-# 10. DATA TABLE
-# --------------------------------
-
-st.divider()
-st.subheader("Retail Transaction Data")
-
-st.dataframe(
-    filtered.head(100),
-    use_container_width=True
-)
+    st.warning("Segment column not found.")
 
 # --------------------------------
 # 11. DOWNLOAD REPORT
