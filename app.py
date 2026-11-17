@@ -201,3 +201,100 @@ st.caption(
     "Developed as a Business Analytics Group Project "
     "| Python | Streamlit | Plotly"
 )
+
+
+rfm = pd.read_csv("customer_rfm_analysis.csv")
+
+
+# ==========================================
+# CUSTOMER SEGMENTATION USING K-MEANS
+# ==========================================
+
+st.header("Customer Segmentation Using K-Means")
+
+# Select RFM features
+features = ["Recency", "Frequency", "Monetary"]
+
+# Prepare data
+rfm_model = rfm.copy()
+
+rfm_model[features] = rfm_model[features].apply(
+    pd.to_numeric, errors="coerce"
+)
+
+rfm_model = rfm_model.replace(
+    [np.inf, -np.inf], np.nan
+).dropna(subset=features).copy()
+
+# Standardize data
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(
+    rfm_model[features]
+)
+
+# Select number of clusters
+n_clusters = st.slider(
+    "Select Number of Customer Groups",
+    min_value=2,
+    max_value=8,
+    value=4
+)
+
+# Apply K-Means
+kmeans = KMeans(
+    n_clusters=n_clusters,
+    random_state=42,
+    n_init=10
+)
+
+rfm_model["Cluster"] = kmeans.fit_predict(scaled_data)
+
+# Cluster summary
+st.subheader("Cluster Summary")
+
+cluster_summary = rfm_model.groupby("Cluster").agg(
+    Customers=("Recency", "count"),
+    Average_Recency=("Recency", "mean"),
+    Average_Frequency=("Frequency", "mean"),
+    Average_Monetary=("Monetary", "mean")
+).round(2)
+
+st.dataframe(
+    cluster_summary,
+    use_container_width=True
+)
+
+# Cluster distribution
+st.subheader("Customer Distribution")
+
+cluster_distribution = (
+    rfm_model["Cluster"]
+    .value_counts()
+    .sort_index()
+    .rename_axis("Cluster")
+    .reset_index(name="Customers")
+)
+
+st.bar_chart(
+    cluster_distribution.set_index("Cluster")
+)
+
+# Customer visualization
+st.subheader("Customer Purchase Behaviour")
+
+st.scatter_chart(
+    rfm_model,
+    x="Frequency",
+    y="Monetary",
+    color="Cluster"
+)
+
+# Customer-level results
+st.subheader("Individual Customer Segments")
+
+st.dataframe(
+    rfm_model,
+    use_container_width=True
+)
+
+st.success("K-Means clustering completed successfully!")
